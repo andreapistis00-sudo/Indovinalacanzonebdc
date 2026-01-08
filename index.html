@@ -51,7 +51,7 @@
       <div id="soloBox">
         <label class="field">
           <span class="label">Nome giocatore</span>
-          <input id="playerNameInput" class="input" placeholder="Es. Andrea">
+          <input id="playerNameInput" class="input">
         </label>
       </div>
 
@@ -59,11 +59,10 @@
         <label class="field">
           <span class="label">Nome squadra</span>
           <div class="inlineAdd">
-            <input id="teamNameInput" class="input" placeholder="Team A, BDC, Rossi…">
+            <input id="teamNameInput" class="input">
             <button id="addTeamBtn" class="btn">Aggiungi</button>
           </div>
         </label>
-
         <ul id="teamsList" class="miniList"></ul>
       </div>
 
@@ -128,6 +127,11 @@
         <button id="hintBtn" class="btn">Indizio</button>
         <button id="skipBtn" class="btn ghost">Salta</button>
         <button id="goLeaderboardBtn" class="btn">Classifica</button>
+
+        <!-- 🔐 RESET PROTETTO -->
+        <button id="resetGameBtn" class="btn danger ghost">
+          Reset partita
+        </button>
       </div>
 
       <div id="feedback" class="feedback"></div>
