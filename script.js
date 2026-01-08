@@ -19,17 +19,17 @@ const SONGS_DB = [
 let settings = {};
 let state = {
   round: 0,
-  score: 0,
   song: null,
   hintIndex: 0,
   time: 0,
   timer: null,
-  player: ""
+  turnIndex: 0
 };
 
+let players = [];
 let leaderboard = JSON.parse(localStorage.getItem("bdc_lb") || "[]");
 
-/* ---------- UTIL ---------- */
+/* ---------- UI ---------- */
 
 function showScreen(id){
   ["screenStart","screenGame","screenLeaderboard"].forEach(s=>{
@@ -44,31 +44,60 @@ function normalize(s){
     .trim();
 }
 
+/* ---------- START ---------- */
+
+modeSelect.onchange = () => {
+  soloBox.hidden = modeSelect.value !== "solo";
+  teamsBox.hidden = modeSelect.value !== "teams";
+};
+
+addTeamBtn.onclick = () => {
+  const name = teamNameInput.value.trim();
+  if(!name || players.includes(name)) return;
+  players.push(name);
+  teamNameInput.value = "";
+  renderTeams();
+};
+
+function renderTeams(){
+  teamsList.innerHTML = "";
+  players.forEach((t,i)=>{
+    const li = document.createElement("li");
+    li.innerHTML = `${t} <button class="btn ghost">✖</button>`;
+    li.querySelector("button").onclick = ()=>{
+      players.splice(i,1);
+      renderTeams();
+    };
+    teamsList.appendChild(li);
+  });
+}
+
 /* ---------- GAME ---------- */
 
 function startGame(){
-  const name = playerNameInput.value.trim();
-  if(!name){
-    alert("Inserisci il nome del giocatore");
-    return;
-  }
-
-  state.player = name;
+  settings.mode = modeSelect.value;
   settings.rounds = +roundsSelect.value;
   settings.timer = timerToggle.checked;
   settings.seconds = +timerSeconds.value;
 
-  state.round = 0;
-  state.score = 0;
+  if(settings.mode === "solo"){
+    const name = playerNameInput.value.trim();
+    if(!name) return alert("Inserisci il nome");
+    players = [name];
+  } else {
+    if(players.length < 2) return alert("Inserisci almeno 2 squadre");
+  }
 
-  hudPlayer.textContent = state.player;
+  state.round = 0;
+  state.turnIndex = 0;
+
   showScreen("screenGame");
   nextRound();
 }
 
 function nextRound(){
   if(state.round >= settings.rounds){
-    saveScore();
+    saveScores();
     renderLeaderboard();
     showScreen("screenLeaderboard");
     return;
@@ -79,7 +108,8 @@ function nextRound(){
   state.song = SONGS_DB[Math.floor(Math.random()*SONGS_DB.length)];
 
   roundMeta.textContent = `Round ${state.round}/${settings.rounds}`;
-  hudScore.textContent = state.score;
+  hudPlayer.textContent = players[state.turnIndex];
+  hudScore.textContent = getScore(players[state.turnIndex]);
   cluesList.innerHTML = "";
   feedback.textContent = "";
   answerInput.value = "";
@@ -98,7 +128,7 @@ function startTimer(){
     if(state.time <= 0){
       clearInterval(state.timer);
       feedback.textContent = `⏰ Era: ${state.song.title}`;
-      setTimeout(nextRound,1500);
+      nextTurn();
     }
   },1000);
 }
@@ -111,12 +141,12 @@ confirmBtn.onclick = ()=>{
     .includes(normalize(state.song.title));
 
   if(ok){
-    state.score += 100 + state.time;
+    addScore(players[state.turnIndex], 100 + state.time);
     feedback.textContent = "✅ Corretto!";
-  }else{
+  } else {
     feedback.textContent = `❌ Era: ${state.song.title}`;
   }
-  setTimeout(nextRound,1500);
+  nextTurn();
 };
 
 hintBtn.onclick = ()=>{
@@ -130,18 +160,32 @@ hintBtn.onclick = ()=>{
 skipBtn.onclick = ()=>{
   clearInterval(state.timer);
   feedback.textContent = `⏭️ Era: ${state.song.title}`;
-  setTimeout(nextRound,1000);
+  nextTurn();
 };
+
+function nextTurn(){
+  state.turnIndex = (state.turnIndex + 1) % players.length;
+  setTimeout(nextRound, 1200);
+}
 
 /* ---------- LEADERBOARD ---------- */
 
-function saveScore(){
-  const existing = leaderboard.find(p => p.name === state.player);
-  if(existing){
-    existing.score += state.score;
-  }else{
-    leaderboard.push({ name: state.player, score: state.score });
+function getScore(name){
+  const e = leaderboard.find(p => p.name === name);
+  return e ? e.score : 0;
+}
+
+function addScore(name, pts){
+  let e = leaderboard.find(p => p.name === name);
+  if(!e){
+    e = { name, score: 0 };
+    leaderboard.push(e);
   }
+  e.score += pts;
+  localStorage.setItem("bdc_lb", JSON.stringify(leaderboard));
+}
+
+function saveScores(){
   localStorage.setItem("bdc_lb", JSON.stringify(leaderboard));
 }
 
