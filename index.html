@@ -39,6 +39,12 @@
 
   <div class="grid2">
     <div class="panel">
+
+      <label class="field">
+        <span class="label">Nome giocatore</span>
+        <input id="playerNameInput" class="input" placeholder="Es. Andrea" />
+      </label>
+
       <label class="field">
         <span class="label">Round</span>
         <select id="roundsSelect">
@@ -70,6 +76,10 @@
   <div class="cardHeader rowBetween">
     <h2 id="roundMeta">Round</h2>
     <div class="hud">
+      <div class="hudItem">
+        <span class="hudLabel">Giocatore</span>
+        <span id="hudPlayer">—</span>
+      </div>
       <div class="hudItem">
         <span class="hudLabel">Punti</span>
         <span id="hudScore">0</span>
