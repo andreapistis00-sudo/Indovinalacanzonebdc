@@ -2,20 +2,17 @@ const SONGS_DB = [
   {
     title: "Bohemian Rhapsody",
     artist: "Queen",
-    hints: [
-      "Rock leggendario",
-      "Parte operistica",
-      "Freddie Mercury"
-    ]
+    hints: ["Rock leggendario", "Parte operistica", "Freddie Mercury"]
   },
   {
     title: "Imagine",
     artist: "John Lennon",
-    hints: [
-      "Canzone pacifista",
-      "Ex Beatles",
-      "Mondo senza confini"
-    ]
+    hints: ["Canzone pacifista", "Ex Beatles", "Mondo senza confini"]
+  },
+  {
+    title: "Smells Like Teen Spirit",
+    artist: "Nirvana",
+    hints: ["Grunge", "Anni 90", "Kurt Cobain"]
   }
 ];
 
@@ -29,6 +26,14 @@ let state = {
   timer: null
 };
 
+let leaderboard = JSON.parse(localStorage.getItem("bdc_lb") || "[]");
+
+function showScreen(id){
+  ["screenStart","screenGame","screenLeaderboard"].forEach(s=>{
+    document.getElementById(s).hidden = s !== id;
+  });
+}
+
 function normalize(s){
   return s.toLowerCase()
     .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
@@ -41,16 +46,19 @@ function startGame(){
   settings.timer = timerToggle.checked;
   settings.seconds = +timerSeconds.value;
 
-  screenStart.hidden = true;
-  screenGame.hidden = false;
+  state.round = 0;
+  state.score = 0;
 
+  showScreen("screenGame");
   nextRound();
 }
 
 function nextRound(){
   if(state.round >= settings.rounds){
-    alert("Fine partita! Punti: " + state.score);
-    location.reload();
+    leaderboard.push({ name: "Giocatore", score: state.score });
+    localStorage.setItem("bdc_lb", JSON.stringify(leaderboard));
+    renderLeaderboard();
+    showScreen("screenLeaderboard");
     return;
   }
 
@@ -68,8 +76,10 @@ function nextRound(){
 }
 
 function startTimer(){
+  clearInterval(state.timer);
   state.time = settings.seconds;
   hudTime.textContent = state.time;
+
   state.timer = setInterval(()=>{
     state.time--;
     hudTime.textContent = state.time;
@@ -109,7 +119,24 @@ skipBtn.onclick = ()=>{
   setTimeout(nextRound,1000);
 };
 
+function renderLeaderboard(){
+  lbBody.innerHTML = "";
+  leaderboard
+    .sort((a,b)=>b.score-a.score)
+    .forEach((p,i)=>{
+      lbBody.innerHTML += `
+        <tr>
+          <td>${i+1}</td>
+          <td>${p.name}</td>
+          <td>${p.score}</td>
+        </tr>`;
+    });
+}
+
 startBtn.onclick = startGame;
+toLeaderboard.onclick = ()=>{ renderLeaderboard(); showScreen("screenLeaderboard"); };
+goLeaderboardBtn.onclick = ()=>{ renderLeaderboard(); showScreen("screenLeaderboard"); };
+backToStart.onclick = ()=> showScreen("screenStart");
 
 answerInput.addEventListener("keydown",e=>{
   if(e.key==="Enter") confirmBtn.click();
