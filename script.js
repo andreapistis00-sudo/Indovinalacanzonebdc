@@ -1,3 +1,5 @@
+const RESET_PIN = "1234"; // 🔐 CAMBIA QUI IL PIN
+
 const SONGS_DB = [
   {
     title: "Bohemian Rhapsody",
@@ -167,6 +169,26 @@ function nextTurn(){
   state.turnIndex = (state.turnIndex + 1) % players.length;
   setTimeout(nextRound, 1200);
 }
+
+/* ---------- 🔐 RESET SICURO ---------- */
+
+function secureReset(){
+  const pin = prompt("Inserisci PIN per resettare la partita:");
+  if(pin !== RESET_PIN){
+    alert("PIN errato");
+    return;
+  }
+
+  clearInterval(state.timer);
+  players = [];
+  state.round = 0;
+  state.turnIndex = 0;
+
+  alert("Partita resettata");
+  showScreen("screenStart");
+}
+
+resetGameBtn.onclick = secureReset;
 
 /* ---------- LEADERBOARD ---------- */
 
