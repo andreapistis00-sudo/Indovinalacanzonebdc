@@ -1,245 +1,147 @@
-const RESET_PIN = "1234"; // 🔐 CAMBIA QUI IL PIN
+const RESET_PIN = "1234";
 
 const SONGS_DB = [
-  {
-    title: "Bohemian Rhapsody",
-    artist: "Queen",
-    hints: ["Rock leggendario", "Parte operistica", "Freddie Mercury"]
-  },
-  {
-    title: "Imagine",
-    artist: "John Lennon",
-    hints: ["Canzone pacifista", "Ex Beatles", "Mondo senza confini"]
-  },
-  {
-    title: "Smells Like Teen Spirit",
-    artist: "Nirvana",
-    hints: ["Grunge", "Anni 90", "Kurt Cobain"]
-  }
+  { title: "Bohemian Rhapsody", hints: ["Queen", "Opera rock"] },
+  { title: "Imagine", hints: ["John Lennon", "Peace"] },
+  { title: "Smells Like Teen Spirit", hints: ["Nirvana", "Grunge"] }
 ];
 
-let settings = {};
-let state = {
-  round: 0,
-  song: null,
-  hintIndex: 0,
-  time: 0,
-  timer: null,
-  turnIndex: 0
-};
-
+let mode = "solo";
 let players = [];
-let leaderboard = JSON.parse(localStorage.getItem("bdc_lb") || "[]");
+let scores = {};
+let round = 0;
+let maxRounds = 10;
+let currentSong = null;
+let hintIndex = 0;
 
-/* ---------- UI ---------- */
-
-function showScreen(id){
-  ["screenStart","screenGame","screenLeaderboard"].forEach(s=>{
-    document.getElementById(s).hidden = s !== id;
-  });
-}
-
-function normalize(s){
-  return s.toLowerCase()
-    .normalize("NFD").replace(/[\u0300-\u036f]/g,"")
-    .replace(/[^\w\s]/g,"")
-    .trim();
-}
-
-/* ---------- START ---------- */
-
-modeSelect.onchange = () => {
-  soloBox.hidden = modeSelect.value !== "solo";
-  teamsBox.hidden = modeSelect.value !== "teams";
+const screens = {
+  start: document.getElementById("screenStart"),
+  game: document.getElementById("screenGame"),
+  lb: document.getElementById("screenLeaderboard")
 };
 
-addTeamBtn.onclick = () => {
+function showScreen(name) {
+  Object.values(screens).forEach(s => s.hidden = true);
+  screens[name].hidden = false;
+}
+
+function normalize(s) {
+  return s.toLowerCase().replace(/[^\w]/g, "");
+}
+
+document.getElementById("modeSelect").onchange = e => {
+  mode = e.target.value;
+  soloBox.hidden = mode !== "solo";
+  teamsBox.hidden = mode !== "teams";
+};
+
+document.getElementById("addTeamBtn").onclick = () => {
   const name = teamNameInput.value.trim();
-  if(!name || players.includes(name)) return;
+  if (!name || players.includes(name)) return;
   players.push(name);
+  scores[name] = 0;
   teamNameInput.value = "";
   renderTeams();
 };
 
-function renderTeams(){
+function renderTeams() {
   teamsList.innerHTML = "";
-  players.forEach((t,i)=>{
+  players.forEach(t => {
     const li = document.createElement("li");
-    li.innerHTML = `${t} <button class="btn ghost">✖</button>`;
-    li.querySelector("button").onclick = ()=>{
-      players.splice(i,1);
-      renderTeams();
-    };
+    li.textContent = t;
     teamsList.appendChild(li);
   });
 }
 
-/* ---------- GAME ---------- */
+document.getElementById("startBtn").onclick = () => {
+  players = [];
+  scores = {};
+  round = 0;
 
-function startGame(){
-  settings.mode = modeSelect.value;
-  settings.rounds = +roundsSelect.value;
-  settings.timer = timerToggle.checked;
-  settings.seconds = +timerSeconds.value;
+  maxRounds = +roundsSelect.value;
 
-  if(settings.mode === "solo"){
+  if (mode === "solo") {
     const name = playerNameInput.value.trim();
-    if(!name) return alert("Inserisci il nome");
+    if (!name) return alert("Inserisci nome");
     players = [name];
+    scores[name] = 0;
   } else {
-    if(players.length < 2) return alert("Inserisci almeno 2 squadre");
+    if (players.length < 2) return alert("Aggiungi almeno 2 squadre");
   }
 
-  state.round = 0;
-  state.turnIndex = 0;
-
-  showScreen("screenGame");
+  showScreen("game");
   nextRound();
-}
+};
 
-function nextRound(){
-  if(state.round >= settings.rounds){
-    saveScores();
+function nextRound() {
+  if (round >= maxRounds) {
+    saveLeaderboard();
     renderLeaderboard();
-    showScreen("screenLeaderboard");
+    showScreen("lb");
     return;
   }
 
-  state.round++;
-  state.hintIndex = 0;
-  state.song = SONGS_DB[Math.floor(Math.random()*SONGS_DB.length)];
+  round++;
+  hintIndex = 0;
+  currentSong = SONGS_DB[Math.floor(Math.random() * SONGS_DB.length)];
 
-  roundMeta.textContent = `Round ${state.round}/${settings.rounds}`;
-  hudPlayer.textContent = players[state.turnIndex];
-  hudScore.textContent = getScore(players[state.turnIndex]);
+  roundMeta.textContent = `Round ${round}/${maxRounds}`;
+  hudPlayer.textContent = players[(round - 1) % players.length];
+  hudScore.textContent = scores[hudPlayer.textContent];
   cluesList.innerHTML = "";
-  feedback.textContent = "";
   answerInput.value = "";
-
-  if(settings.timer) startTimer();
 }
 
-function startTimer(){
-  clearInterval(state.timer);
-  state.time = settings.seconds;
-  hudTime.textContent = state.time;
-
-  state.timer = setInterval(()=>{
-    state.time--;
-    hudTime.textContent = state.time;
-    if(state.time <= 0){
-      clearInterval(state.timer);
-      feedback.textContent = `⏰ Era: ${state.song.title}`;
-      nextTurn();
-    }
-  },1000);
-}
-
-/* ---------- ACTIONS ---------- */
-
-confirmBtn.onclick = ()=>{
-  clearInterval(state.timer);
-  const ok = normalize(answerInput.value)
-    .includes(normalize(state.song.title));
-
-  if(ok){
-    addScore(players[state.turnIndex], 100 + state.time);
-    feedback.textContent = "✅ Corretto!";
+confirmBtn.onclick = () => {
+  const player = hudPlayer.textContent;
+  if (normalize(answerInput.value).includes(normalize(currentSong.title))) {
+    scores[player] += 100;
+    alert("Corretto!");
   } else {
-    feedback.textContent = `❌ Era: ${state.song.title}`;
+    alert("Sbagliato! Era: " + currentSong.title);
   }
-  nextTurn();
+  nextRound();
 };
 
-hintBtn.onclick = ()=>{
-  if(state.hintIndex < state.song.hints.length){
+hintBtn.onclick = () => {
+  if (hintIndex < currentSong.hints.length) {
     const li = document.createElement("li");
-    li.textContent = state.song.hints[state.hintIndex++];
+    li.textContent = currentSong.hints[hintIndex++];
     cluesList.appendChild(li);
   }
 };
 
-skipBtn.onclick = ()=>{
-  clearInterval(state.timer);
-  feedback.textContent = `⏭️ Era: ${state.song.title}`;
-  nextTurn();
+skipBtn.onclick = nextRound;
+
+/* 🔐 RESET PROTETTO */
+document.getElementById("resetGameBtn").onclick = () => {
+  const pin = prompt("Inserisci PIN:");
+  if (pin !== RESET_PIN) return alert("PIN errato");
+  showScreen("start");
 };
 
-function nextTurn(){
-  state.turnIndex = (state.turnIndex + 1) % players.length;
-  setTimeout(nextRound, 1200);
+/* CLASSIFICA */
+function saveLeaderboard() {
+  const lb = JSON.parse(localStorage.getItem("bdc_lb") || "[]");
+  Object.keys(scores).forEach(name => {
+    const e = lb.find(p => p.name === name);
+    if (e) e.score += scores[name];
+    else lb.push({ name, score: scores[name] });
+  });
+  localStorage.setItem("bdc_lb", JSON.stringify(lb));
 }
 
-/* ---------- 🔐 RESET SICURO ---------- */
-
-function secureReset(){
-  const pin = prompt("Inserisci PIN per resettare la partita:");
-  if(pin !== RESET_PIN){
-    alert("PIN errato");
-    return;
-  }
-
-  clearInterval(state.timer);
-  players = [];
-  state.round = 0;
-  state.turnIndex = 0;
-
-  alert("Partita resettata");
-  showScreen("screenStart");
-}
-
-resetGameBtn.onclick = secureReset;
-
-/* ---------- LEADERBOARD ---------- */
-
-function getScore(name){
-  const e = leaderboard.find(p => p.name === name);
-  return e ? e.score : 0;
-}
-
-function addScore(name, pts){
-  let e = leaderboard.find(p => p.name === name);
-  if(!e){
-    e = { name, score: 0 };
-    leaderboard.push(e);
-  }
-  e.score += pts;
-  localStorage.setItem("bdc_lb", JSON.stringify(leaderboard));
-}
-
-function saveScores(){
-  localStorage.setItem("bdc_lb", JSON.stringify(leaderboard));
-}
-
-function renderLeaderboard(){
+function renderLeaderboard() {
+  const lb = JSON.parse(localStorage.getItem("bdc_lb") || "[]");
   lbBody.innerHTML = "";
-  leaderboard
-    .sort((a,b)=>b.score-a.score)
-    .forEach((p,i)=>{
-      lbBody.innerHTML += `
-        <tr>
-          <td>${i+1}</td>
-          <td>${p.name}</td>
-          <td>${p.score}</td>
-        </tr>`;
-    });
+  lb.sort((a,b)=>b.score-a.score).forEach((p,i)=>{
+    lbBody.innerHTML += `<tr><td>${i+1}</td><td>${p.name}</td><td>${p.score}</td></tr>`;
+  });
 }
 
-/* ---------- NAV ---------- */
+document.getElementById("toLeaderboard").onclick = () => {
+  renderLeaderboard();
+  showScreen("lb");
+};
 
-startBtn.onclick = startGame;
-toLeaderboard.onclick = ()=>{ renderLeaderboard(); showScreen("screenLeaderboard"); };
-goLeaderboardBtn.onclick = ()=>{ renderLeaderboard(); showScreen("screenLeaderboard"); };
-backToStart.onclick = ()=> showScreen("screenStart");
-
-answerInput.addEventListener("keydown",e=>{
-  if(e.key==="Enter") confirmBtn.click();
-});
-document.addEventListener("DOMContentLoaded", () => {
-
-  const resetBtn = document.getElementById("resetGameBtn");
-  if (resetBtn) {
-    resetBtn.addEventListener("click", secureReset);
-  }
-
-});
+document.getElementById("backToStart").onclick = () => showScreen("start");
