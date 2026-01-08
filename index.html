@@ -1,50 +1,89 @@
-<!-- GAME -->
-<section id="screenGame" class="card screen" hidden>
-  <div class="cardHeader rowBetween">
-    <h2 id="roundMeta">Round</h2>
-    <div class="hud">
-      <div class="hudItem">
-        <span class="hudLabel">Turno</span>
-        <span id="hudPlayer">—</span>
-      </div>
-      <div class="hudItem">
-        <span class="hudLabel">Punti</span>
-        <span id="hudScore">0</span>
-      </div>
-      <div class="hudItem">
-        <span class="hudLabel">Tempo</span>
-        <span id="hudTime">—</span>
-      </div>
-    </div>
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>INDOVINA LA CANZONE AL BDC</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="topbar">
+  <h1>🎵 INDOVINA LA CANZONE AL BDC</h1>
+  <button id="toLeaderboard" class="btn">Classifica</button>
+</header>
+
+<main class="container">
+
+<!-- START -->
+<section id="screenStart" class="card">
+  <h2>Start</h2>
+
+  <label>Modalità
+    <select id="modeSelect">
+      <option value="solo">Singolo</option>
+      <option value="teams">Squadre</option>
+    </select>
+  </label>
+
+  <div id="soloBox">
+    <label>Nome giocatore
+      <input id="playerNameInput" placeholder="Andrea">
+    </label>
   </div>
 
-  <div class="gameGrid">
-    <div class="panel">
-      <h3 class="panelTitle">Indizi</h3>
-      <ol id="cluesList" class="clues"></ol>
-
-      <label class="field">
-        <span class="label">Risposta</span>
-        <input id="answerInput" class="input">
-      </label>
-
-      <div class="actions">
-        <button id="confirmBtn" class="btn primary">Conferma</button>
-        <button id="hintBtn" class="btn">Indizio</button>
-        <button id="skipBtn" class="btn ghost">Salta</button>
-        <button id="goLeaderboardBtn" class="btn">Classifica</button>
-      </div>
-
-      <div id="feedback" class="feedback"></div>
-
-      <!-- 🔐 ZONA HOST (SEMPRE VISIBILE) -->
-      <div class="divider"></div>
-
-      <div class="actions">
-        <button id="resetGameBtn" class="btn danger">
-          🔐 Reset partita
-        </button>
-      </div>
-    </div>
+  <div id="teamsBox" hidden>
+    <label>Nome squadra</label>
+    <input id="teamNameInput">
+    <button id="addTeamBtn" class="btn">Aggiungi squadra</button>
+    <ul id="teamsList"></ul>
   </div>
+
+  <label>Round
+    <select id="roundsSelect">
+      <option value="5">5</option>
+      <option value="10" selected>10</option>
+    </select>
+  </label>
+
+  <button id="startBtn" class="btn primary">▶ Inizia</button>
 </section>
+
+<!-- GAME -->
+<section id="screenGame" class="card" hidden>
+  <h2 id="roundMeta"></h2>
+  <p><strong>Turno:</strong> <span id="hudPlayer"></span></p>
+  <p><strong>Punti:</strong> <span id="hudScore">0</span></p>
+
+  <ol id="cluesList"></ol>
+
+  <input id="answerInput" placeholder="Risposta">
+  <br><br>
+
+  <button id="confirmBtn" class="btn primary">Conferma</button>
+  <button id="hintBtn" class="btn">Indizio</button>
+  <button id="skipBtn" class="btn">Salta</button>
+
+  <hr>
+
+  <!-- RESET PROTETTO -->
+  <button id="resetGameBtn" class="btn danger">🔐 Reset partita</button>
+</section>
+
+<!-- LEADERBOARD -->
+<section id="screenLeaderboard" class="card" hidden>
+  <h2>Classifica</h2>
+  <table>
+    <thead>
+      <tr><th>#</th><th>Nome</th><th>Punti</th></tr>
+    </thead>
+    <tbody id="lbBody"></tbody>
+  </table>
+  <button id="backToStart" class="btn">← Start</button>
+</section>
+
+<script src="script.js"></script>
+</main>
+</body>
+</html>
