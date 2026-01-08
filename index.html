@@ -41,9 +41,31 @@
     <div class="panel">
 
       <label class="field">
-        <span class="label">Nome giocatore</span>
-        <input id="playerNameInput" class="input" placeholder="Es. Andrea" />
+        <span class="label">Modalità</span>
+        <select id="modeSelect">
+          <option value="solo">Singolo</option>
+          <option value="teams">Squadre</option>
+        </select>
       </label>
+
+      <div id="soloBox">
+        <label class="field">
+          <span class="label">Nome giocatore</span>
+          <input id="playerNameInput" class="input" placeholder="Es. Andrea">
+        </label>
+      </div>
+
+      <div id="teamsBox" hidden>
+        <label class="field">
+          <span class="label">Nome squadra</span>
+          <div class="inlineAdd">
+            <input id="teamNameInput" class="input" placeholder="Team A, BDC, Rossi…">
+            <button id="addTeamBtn" class="btn">Aggiungi</button>
+          </div>
+        </label>
+
+        <ul id="teamsList" class="miniList"></ul>
+      </div>
 
       <label class="field">
         <span class="label">Round</span>
@@ -77,7 +99,7 @@
     <h2 id="roundMeta">Round</h2>
     <div class="hud">
       <div class="hudItem">
-        <span class="hudLabel">Giocatore</span>
+        <span class="hudLabel">Turno</span>
         <span id="hudPlayer">—</span>
       </div>
       <div class="hudItem">
@@ -98,7 +120,7 @@
 
       <label class="field">
         <span class="label">Risposta</span>
-        <input id="answerInput" class="input" autocomplete="off">
+        <input id="answerInput" class="input">
       </label>
 
       <div class="actions">
