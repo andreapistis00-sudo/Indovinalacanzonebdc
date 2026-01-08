@@ -235,3 +235,11 @@ backToStart.onclick = ()=> showScreen("screenStart");
 answerInput.addEventListener("keydown",e=>{
   if(e.key==="Enter") confirmBtn.click();
 });
+document.addEventListener("DOMContentLoaded", () => {
+
+  const resetBtn = document.getElementById("resetGameBtn");
+  if (resetBtn) {
+    resetBtn.addEventListener("click", secureReset);
+  }
+
+});
