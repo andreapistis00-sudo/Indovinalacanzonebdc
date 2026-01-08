@@ -23,10 +23,13 @@ let state = {
   song: null,
   hintIndex: 0,
   time: 0,
-  timer: null
+  timer: null,
+  player: ""
 };
 
 let leaderboard = JSON.parse(localStorage.getItem("bdc_lb") || "[]");
+
+/* ---------- UTIL ---------- */
 
 function showScreen(id){
   ["screenStart","screenGame","screenLeaderboard"].forEach(s=>{
@@ -41,7 +44,16 @@ function normalize(s){
     .trim();
 }
 
+/* ---------- GAME ---------- */
+
 function startGame(){
+  const name = playerNameInput.value.trim();
+  if(!name){
+    alert("Inserisci il nome del giocatore");
+    return;
+  }
+
+  state.player = name;
   settings.rounds = +roundsSelect.value;
   settings.timer = timerToggle.checked;
   settings.seconds = +timerSeconds.value;
@@ -49,14 +61,14 @@ function startGame(){
   state.round = 0;
   state.score = 0;
 
+  hudPlayer.textContent = state.player;
   showScreen("screenGame");
   nextRound();
 }
 
 function nextRound(){
   if(state.round >= settings.rounds){
-    leaderboard.push({ name: "Giocatore", score: state.score });
-    localStorage.setItem("bdc_lb", JSON.stringify(leaderboard));
+    saveScore();
     renderLeaderboard();
     showScreen("screenLeaderboard");
     return;
@@ -91,6 +103,8 @@ function startTimer(){
   },1000);
 }
 
+/* ---------- ACTIONS ---------- */
+
 confirmBtn.onclick = ()=>{
   clearInterval(state.timer);
   const ok = normalize(answerInput.value)
@@ -119,6 +133,18 @@ skipBtn.onclick = ()=>{
   setTimeout(nextRound,1000);
 };
 
+/* ---------- LEADERBOARD ---------- */
+
+function saveScore(){
+  const existing = leaderboard.find(p => p.name === state.player);
+  if(existing){
+    existing.score += state.score;
+  }else{
+    leaderboard.push({ name: state.player, score: state.score });
+  }
+  localStorage.setItem("bdc_lb", JSON.stringify(leaderboard));
+}
+
 function renderLeaderboard(){
   lbBody.innerHTML = "";
   leaderboard
@@ -132,6 +158,8 @@ function renderLeaderboard(){
         </tr>`;
     });
 }
+
+/* ---------- NAV ---------- */
 
 startBtn.onclick = startGame;
 toLeaderboard.onclick = ()=>{ renderLeaderboard(); showScreen("screenLeaderboard"); };
